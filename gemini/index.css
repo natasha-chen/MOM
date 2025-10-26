@@ -1,0 +1,27 @@
+body, html {
+height: 100%;
+margin: 0;
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
+}
+
+body {
+font-family: "Times New Roman", Times, serif;
+line-height: 1.4;
+background-color: #f0f4f8;
+}
+
+/* If using Tailwind's font-sans, override it: */
+.font-sans {
+font-family: "Times New Roman", Times, serif;
+}
+
+/* Make Tailwind's font-serif utility use a serif stack */
+.font-serif {
+	font-family: "Times New Roman", Times, serif;
+}
+
+/* Ensure form controls inherit the document font */
+input, button, textarea, select {
+	font-family: inherit;
+}
