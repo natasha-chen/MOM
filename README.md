@@ -20,3 +20,10 @@ Reminds remind you to be kind to yourself.
 
 We don’t want wellness to feel like another task.
 We want it to feel like being cared for.
+
+Try it out! 
+Prerequisites: Node.js
+1. Set the GEMINI_API_KEY in .env to your Gemini API key
+2. cd gemini
+3. npm install
+4. npm run dev
