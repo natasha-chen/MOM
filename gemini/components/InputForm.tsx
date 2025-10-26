@@ -4,18 +4,20 @@ import React, { useState, useRef } from 'react';
 declare const pdfjsLib: any;
 
 interface InputFormProps {
-  onGenerate: (userInput: string) => void;
+  onGenerate: (userInput: string, specifications: string, tone: string) => void;
   isLoading: boolean;
 }
 
 const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
   const [userInput, setUserInput] = useState<string>('');
+  const [specifications, setSpecifications] = useState<string>('');
+  const [tone, setTone] = useState<string>('Neutral & Professional');
   const [isParsingPdf, setIsParsingPdf] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onGenerate(userInput);
+    onGenerate(userInput, specifications, tone);
   };
 
   const handleFileSelect = () => {
@@ -68,15 +70,67 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
   const isDisabled = isLoading || isParsingPdf;
 
   return (
-    <form onSubmit={handleSubmit}>
-      <textarea
-        className="w-full h-40 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-shadow duration-200 resize-none placeholder-slate-400"
-        placeholder="e.g., Finish Math assignment Chapter 3... or upload your syllabus PDF."
-        value={userInput}
-        onChange={(e) => setUserInput(e.target.value)}
-        disabled={isDisabled}
-      />
-      <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <label htmlFor="main-input" className="block text-sm font-medium text-slate-600 mb-1">
+          Primary Tasks / Syllabus Content
+        </label>
+        <textarea
+          id="main-input"
+          className="w-full h-40 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-shadow duration-200 resize-y placeholder-slate-400"
+          placeholder="e.g., Finish Math assignment Chapter 3... or upload your syllabus PDF."
+          value={userInput}
+          onChange={(e) => setUserInput(e.target.value)}
+          disabled={isDisabled}
+        />
+      </div>
+       <div>
+        <label htmlFor="specifications" className="block text-sm font-medium text-slate-600 mb-1">
+          Additional Specifications (Optional)
+        </label>
+        <textarea
+          id="specifications"
+          className="w-full h-24 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition-shadow duration-200 resize-y placeholder-slate-400"
+          placeholder="e.g., I have a meeting at 3 PM. Prioritize studying for my physics exam."
+          value={specifications}
+          onChange={(e) => setSpecifications(e.target.value)}
+          disabled={isDisabled}
+        />
+      </div>
+
+       <div>
+        <fieldset>
+            <legend className="block text-sm font-medium text-slate-600 mb-2">Notification Tone</legend>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {['Neutral & Professional', 'Firm & Motivating', 'Gentle & Encouraging'].map((toneOption) => (
+                <div key={toneOption}>
+                <input
+                    type="radio"
+                    id={toneOption}
+                    name="tone"
+                    value={toneOption}
+                    checked={tone === toneOption}
+                    onChange={(e) => setTone(e.target.value)}
+                    disabled={isDisabled}
+                    className="sr-only"
+                />
+                <label
+                    htmlFor={toneOption}
+                    className={`block w-full text-center p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
+                    tone === toneOption
+                        ? 'bg-sky-500 border-sky-600 text-white font-bold shadow-md'
+                        : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                    } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    {toneOption}
+                </label>
+                </div>
+            ))}
+            </div>
+        </fieldset>
+      </div>
+
+      <div className="pt-2 flex flex-col sm:flex-row justify-between items-center gap-4">
          <input
           type="file"
           accept=".pdf"
@@ -93,7 +147,7 @@ const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
           </svg>
-          {isParsingPdf ? 'Processing PDF...' : 'Upload Syllabus (PDF)'}
+          {isParsingPdf ? 'Processing...' : 'Upload Syllabus'}
         </button>
         <button
           type="submit"

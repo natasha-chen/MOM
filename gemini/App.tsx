@@ -12,7 +12,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleGeneratePlan = useCallback(async (userInput: string) => {
+  const handleGeneratePlan = useCallback(async (userInput: string, specifications: string, tone: string) => {
     if (!userInput.trim()) {
       setError('Please enter your tasks or syllabus.');
       return;
@@ -22,7 +22,7 @@ const App: React.FC = () => {
     setPlan([]);
 
     try {
-      const generatedPlan = await generatePlan(userInput);
+      const generatedPlan = await generatePlan(userInput, specifications, tone);
       setPlan(generatedPlan);
     } catch (err) {
       console.error(err);
@@ -40,7 +40,7 @@ const App: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8 border border-slate-200">
             <h2 className="text-2xl font-bold text-slate-700 mb-2">What's on your plate today?</h2>
             <p className="text-slate-500 mb-6">
-              Paste your syllabus, to-do list, or study goals below. MOM will create a balanced schedule to help you stay productive and feel your best.
+              Paste your syllabus, to-do list, or study goals below. Add any specifications and choose a notification tone to get a truly personalized plan MOM will create a balanced schedule to help you stay productive and feel your best.
             </p>
             <InputForm onGenerate={handleGeneratePlan} isLoading={isLoading} />
           </div>
