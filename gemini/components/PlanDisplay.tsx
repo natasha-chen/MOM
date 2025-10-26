@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlanItem } from '../types';
+import { PlanItem, TaskStatus } from '../types';
 import PlanCard from './PlanCard';
 
 interface PlanDisplayProps {
@@ -12,6 +12,12 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
   const handleDueDateChange = (index: number, newDueDate: string) => {
     const updatedPlan = [...localPlan];
     updatedPlan[index] = { ...updatedPlan[index], dueDate: newDueDate };
+    setLocalPlan(updatedPlan);
+  };
+
+  const handleStatusChange = (index: number, newStatus: TaskStatus) => {
+    const updatedPlan = [...localPlan];
+    updatedPlan[index] = { ...updatedPlan[index], status: newStatus };
     setLocalPlan(updatedPlan);
   };
 
@@ -42,6 +48,7 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
             key={index}
             item={item}
             onDueDateChange={(newDate) => handleDueDateChange(index, newDate)}
+            onStatusChange={(newStatus) => handleStatusChange(index, newStatus)}
           />
         ))}
       </div>

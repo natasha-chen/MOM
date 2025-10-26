@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { PlanItem, PlanCategory } from '../types';
+import { PlanItem, PlanCategory, TaskStatus } from '../types';
 
 if (!process.env.API_KEY) {
     throw new Error("API_KEY environment variable not set");
@@ -89,7 +89,13 @@ export const generatePlan = async (userInput: string, specifications: string, to
       throw new Error("API did not return a valid plan array.");
     }
 
-    return plan as PlanItem[];
+    // Add default status to each plan item
+    const planWithStatus = plan.map(item => ({
+      ...item,
+      status: TaskStatus.NOT_STARTED
+    }));
+
+    return planWithStatus;
   } catch (error) {
     console.error("Error generating plan with Gemini:", error);
     throw new Error("Failed to parse or receive a valid plan from the AI.");
