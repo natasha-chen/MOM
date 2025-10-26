@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { PlanItem, PlanCategory } from '../types';
+import formatDueDate from '../utils/formatDate';
 
 interface PlanCardProps {
   item: PlanItem;
+  onDueDateChange?: (newDueDate: string) => void;
 }
 
 const CategoryStyles = {
@@ -38,7 +40,7 @@ const CategoryStyles = {
   },
 };
 
-const PlanCard: React.FC<PlanCardProps> = ({ item }) => {
+const PlanCard: React.FC<PlanCardProps> = ({ item, onDueDateChange }) => {
   const styles = CategoryStyles[item.category] || CategoryStyles[PlanCategory.PRODUCTIVITY];
   const [notificationPermission, setNotificationPermission] = useState('default');
 
@@ -122,6 +124,21 @@ const PlanCard: React.FC<PlanCardProps> = ({ item }) => {
                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <span>{item.duration} min</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {onDueDateChange ? (
+              <input
+                type="date"
+                value={item.dueDate || ''}
+                onChange={(e) => onDueDateChange(e.target.value)}
+                className="p-1 text-sm rounded border border-slate-300 hover:border-sky-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none"
+              />
+            ) : (
+              <span>{formatDueDate(item.dueDate)}</span>
+            )}
           </div>
         </div>
       </div>

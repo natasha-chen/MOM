@@ -10,4 +10,5 @@ export interface PlanItem {
   category: PlanCategory;
   duration: number; // in minutes
   notificationText: string;
+  dueDate?: string; // optional property for due date
 }
