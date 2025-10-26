@@ -43,6 +43,34 @@ const CategoryStyles = {
 const PlanCard: React.FC<PlanCardProps> = ({ item, onDueDateChange }) => {
   const styles = CategoryStyles[item.category] || CategoryStyles[PlanCategory.PRODUCTIVITY];
   const [notificationPermission, setNotificationPermission] = useState('default');
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer); // Cleanup on unmount
+  }, []);
+
+  // Check for scheduled tasks and send notifications
+  useEffect(() => {
+    if (!item.time || notificationPermission !== 'granted') return;
+
+    const [hours, minutes] = item.time.split(':').map(Number);
+    const now = new Date();
+    
+    // Check if current time matches the scheduled time (within 1 minute)
+    if (now.getHours() === hours && 
+        Math.abs(now.getMinutes() - minutes) <= 1) {
+      new Notification(`Time for: ${item.task}`, {
+        body: item.notificationText,
+        icon: '/vite.svg',
+        tag: `task-${item.task}-${item.time}-${now.toDateString()}` // Prevent duplicate notifications for today
+      });
+    }
+  }, [currentTime, item.time, item.task, item.notificationText, notificationPermission]);
 
   useEffect(() => {
     if ('Notification' in window) {
@@ -82,6 +110,24 @@ const PlanCard: React.FC<PlanCardProps> = ({ item, onDueDateChange }) => {
       return 'Click to enable and send a test notification';
     }
     return 'Send a test notification';
+  };
+
+  const getDueStatus = () => {
+    if (!item.dueDate) return null;
+    
+    const dueDate = new Date(item.dueDate);
+    const today = new Date(currentTime);
+    today.setHours(0, 0, 0, 0);
+    dueDate.setHours(0, 0, 0, 0);
+    
+    if (dueDate.getTime() === today.getTime()) {
+      return { text: 'Due today', class: 'bg-yellow-100 text-yellow-800' };
+    } else if (dueDate < today) {
+      return { text: 'Overdue', class: 'bg-red-100 text-red-800' };
+    } else {
+      const diffTime = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return { text: `Due in ${diffTime} days`, class: 'bg-green-100 text-green-800' };
+    }
   };
 
   return (
@@ -130,14 +176,40 @@ const PlanCard: React.FC<PlanCardProps> = ({ item, onDueDateChange }) => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             {onDueDateChange ? (
-              <input
-                type="date"
-                value={item.dueDate || ''}
-                onChange={(e) => onDueDateChange(e.target.value)}
-                className="p-1 text-sm rounded border border-slate-300 hover:border-sky-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none"
-              />
+              <div className="flex items-center space-x-2 group relative">
+                {!item.dueDate && <span className="text-xs text-slate-500">TBD</span>}
+                <div className="relative">
+                  <div 
+                    className="p-1 text-sm rounded border border-slate-300 hover:border-sky-500 cursor-pointer min-w-[110px]"
+                    onClick={(e) => {
+                      const input = e.currentTarget.nextElementSibling as HTMLInputElement;
+                      input?.showPicker();
+                    }}
+                  >
+                    {item.dueDate ? formatDueDate(item.dueDate) : 'Select date'}
+                  </div>
+                  <input
+                    type="date"
+                    value={item.dueDate || ''}
+                    onChange={(e) => onDueDateChange(e.target.value)}
+                    className="absolute opacity-0 -z-10"
+                  />
+                </div>
+                {item.dueDate && getDueStatus() && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${getDueStatus()?.class}`}>
+                    {getDueStatus()?.text}
+                  </span>
+                )}
+              </div>
             ) : (
-              <span>{formatDueDate(item.dueDate)}</span>
+              <div className="flex flex-col">
+                <span>{formatDueDate(item.dueDate) || 'TBD'}</span>
+                {item.dueDate && getDueStatus() && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full mt-1 ${getDueStatus()?.class}`}>
+                    {getDueStatus()?.text}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
