@@ -33,7 +33,7 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
+    <div className="min-h-screen bg-slate-50 font-serif text-slate-800">
       <Header />
       <main className="container mx-auto p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
