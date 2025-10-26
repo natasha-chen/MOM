@@ -1,5 +1,5 @@
-import React from 'react';
-import { PlanItem } from '../types';
+import React, { useState } from 'react';
+import { PlanItem, TaskStatus } from '../types';
 import PlanCard from './PlanCard';
 
 interface PlanDisplayProps {
@@ -7,6 +7,20 @@ interface PlanDisplayProps {
 }
 
 const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
+  const [localPlan, setLocalPlan] = useState<PlanItem[]>(plan);
+
+  const handleDueDateChange = (index: number, newDueDate: string) => {
+    const updatedPlan = [...localPlan];
+    updatedPlan[index] = { ...updatedPlan[index], dueDate: newDueDate };
+    setLocalPlan(updatedPlan);
+  };
+
+  const handleStatusChange = (index: number, newStatus: TaskStatus) => {
+    const updatedPlan = [...localPlan];
+    updatedPlan[index] = { ...updatedPlan[index], status: newStatus };
+    setLocalPlan(updatedPlan);
+  };
+
   if (plan.length === 0) {
     return (
       <div className="text-center py-16 px-6 bg-white rounded-2xl shadow-lg border border-slate-200">
@@ -29,8 +43,13 @@ const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
         <p className="text-sm">You can click the <strong className="font-bold">🔔</strong> on any task to get a sample browser notification!</p>
       </div>
       <div className="space-y-4">
-        {plan.map((item, index) => (
-          <PlanCard key={index} item={item} />
+        {localPlan.map((item, index) => (
+          <PlanCard
+            key={index}
+            item={item}
+            onDueDateChange={(newDate) => handleDueDateChange(index, newDate)}
+            onStatusChange={(newStatus) => handleStatusChange(index, newStatus)}
+          />
         ))}
       </div>
     </div>

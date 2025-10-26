@@ -1,9 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { PlanItem, PlanCategory } from '../types';
+import { PlanItem, PlanCategory, TaskStatus } from '../types';
+import formatDueDate from '../utils/formatDate';
 
 interface PlanCardProps {
   item: PlanItem;
+  onDueDateChange?: (newDueDate: string) => void;
+  onStatusChange?: (newStatus: TaskStatus) => void;
 }
+
+const StatusStyles = {
+  [TaskStatus.NOT_STARTED]: {
+    bg: 'bg-slate-100',
+    text: 'text-slate-700',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    )
+  },
+  [TaskStatus.IN_PROGRESS]: {
+    bg: 'bg-blue-100',
+    text: 'text-blue-700',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    )
+  },
+  [TaskStatus.COMPLETED]: {
+    bg: 'bg-green-100',
+    text: 'text-green-700',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    )
+  }
+};
 
 const CategoryStyles = {
   [PlanCategory.PRODUCTIVITY]: {
@@ -38,9 +71,37 @@ const CategoryStyles = {
   },
 };
 
-const PlanCard: React.FC<PlanCardProps> = ({ item }) => {
+const PlanCard: React.FC<PlanCardProps> = ({ item, onDueDateChange, onStatusChange }) => {
   const styles = CategoryStyles[item.category] || CategoryStyles[PlanCategory.PRODUCTIVITY];
   const [notificationPermission, setNotificationPermission] = useState('default');
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer); // Cleanup on unmount
+  }, []);
+
+  // Check for scheduled tasks and send notifications
+  useEffect(() => {
+    if (!item.time || notificationPermission !== 'granted') return;
+
+    const [hours, minutes] = item.time.split(':').map(Number);
+    const now = new Date();
+    
+    // Check if current time matches the scheduled time (within 1 minute)
+    if (now.getHours() === hours && 
+        Math.abs(now.getMinutes() - minutes) <= 1) {
+      new Notification(`Time for: ${item.task}`, {
+        body: item.notificationText,
+        icon: '/vite.svg',
+        tag: `task-${item.task}-${item.time}-${now.toDateString()}` // Prevent duplicate notifications for today
+      });
+    }
+  }, [currentTime, item.time, item.task, item.notificationText, notificationPermission]);
 
   useEffect(() => {
     if ('Notification' in window) {
@@ -82,6 +143,24 @@ const PlanCard: React.FC<PlanCardProps> = ({ item }) => {
     return 'Send a test notification';
   };
 
+  const getDueStatus = () => {
+    if (!item.dueDate) return null;
+    
+    const dueDate = new Date(item.dueDate);
+    const today = new Date(currentTime);
+    today.setHours(0, 0, 0, 0);
+    dueDate.setHours(0, 0, 0, 0);
+    
+    if (dueDate.getTime() === today.getTime()) {
+      return { text: 'Due today', class: 'bg-yellow-100 text-yellow-800' };
+    } else if (dueDate < today) {
+      return { text: 'Overdue', class: 'bg-red-100 text-red-800' };
+    } else {
+      const diffTime = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return { text: `Due in ${diffTime} days`, class: 'bg-green-100 text-green-800' };
+    }
+  };
+
   return (
     <div className={`flex items-start space-x-4 p-4 rounded-xl shadow-sm transition-all duration-300 bg-white border-l-4 ${styles.borderColor} hover:shadow-md`}>
       <div className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full ${styles.bgColor} ${styles.textColor}`}>
@@ -94,6 +173,22 @@ const PlanCard: React.FC<PlanCardProps> = ({ item }) => {
             <span className={`text-xs sm:text-sm font-medium ${styles.textColor} ${styles.bgColor} px-2 py-1 rounded-full`}>
                 {item.category}
             </span>
+            <div className="relative group">
+              <button
+                className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs ${StatusStyles[item.status].bg} ${StatusStyles[item.status].text}`}
+                onClick={() => {
+                  if (onStatusChange) {
+                    const statuses = Object.values(TaskStatus);
+                    const currentIndex = statuses.indexOf(item.status);
+                    const nextStatus = statuses[(currentIndex + 1) % statuses.length];
+                    onStatusChange(nextStatus);
+                  }
+                }}
+              >
+                {StatusStyles[item.status].icon}
+                <span>{item.status}</span>
+              </button>
+            </div>
             <button
                 onClick={handleNotificationClick}
                 disabled={notificationPermission === 'denied'}
@@ -122,6 +217,47 @@ const PlanCard: React.FC<PlanCardProps> = ({ item }) => {
                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <span>{item.duration} min</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {onDueDateChange ? (
+              <div className="flex items-center space-x-2 group relative">
+                {!item.dueDate && <span className="text-xs text-slate-500">TBD</span>}
+                <div className="relative">
+                  <div 
+                    className="p-1 text-sm rounded border border-slate-300 hover:border-sky-500 cursor-pointer min-w-[110px]"
+                    onClick={(e) => {
+                      const input = e.currentTarget.nextElementSibling as HTMLInputElement;
+                      input?.showPicker();
+                    }}
+                  >
+                    {item.dueDate ? formatDueDate(item.dueDate) : 'Select date'}
+                  </div>
+                  <input
+                    type="date"
+                    value={item.dueDate || ''}
+                    onChange={(e) => onDueDateChange(e.target.value)}
+                    className="absolute opacity-0 -z-10"
+                  />
+                </div>
+                {item.dueDate && getDueStatus() && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${getDueStatus()?.class}`}>
+                    {getDueStatus()?.text}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                <span>{formatDueDate(item.dueDate) || 'TBD'}</span>
+                {item.dueDate && getDueStatus() && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full mt-1 ${getDueStatus()?.class}`}>
+                    {getDueStatus()?.text}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
