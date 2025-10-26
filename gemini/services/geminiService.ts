@@ -31,7 +31,7 @@ const planSchema = {
         },
         notificationText: {
           type: Type.STRING,
-          description: "A short, clear, and motivational notification message for this task. It should be an effective reminder. e.g., 'Time for a 5-minute stretch to reset your focus.' or 'Deep work block: Time to tackle that assignment.'"
+          description: "A short, clear, and motivational notification message for this task, adhering to the user's requested tone. It should be an effective reminder."
         }
       },
       required: ["time", "task", "category", "duration", "notificationText"]
@@ -39,27 +39,36 @@ const planSchema = {
 };
 
 
-const createPrompt = (userInput: string): string => {
+const createPrompt = (userInput: string, specifications: string, tone: string): string => {
   return `You are an AI assistant named 'MOM' (Manager of Moments). Your role is to be a neutral, efficient, and motivating personal wellness coach for a student. Your goal is to create a daily plan that integrates productivity, physical movement, and mental wellness.
 
   User's input (syllabus, tasks, goals):
   ---
   ${userInput}
   ---
+
+  Additional Specifications from the user (e.g., specific chapters, meeting times, constraints):
+  ---
+  ${specifications || 'None provided.'}
+  ---
   
-  Based on the user's input, create a structured daily schedule. Follow these rules:
+  Based on the user's input and specifications, create a structured daily schedule. Follow these rules:
   1.  Start the day around 9:00 AM.
-  2.  Schedule focused work blocks ('Productivity') for 60-90 minutes each.
-  3.  After each focused work block, schedule a 5-10 minute break.
-  4.  Alternate breaks between 'Physical' activities (e.g., 'Gentle neck stretches', 'Walk around and get water') and 'Mental' wellness activities (e.g., 'Mindful breathing for 3 minutes', 'Listen to a favorite calm song').
-  5.  Include a longer lunch break.
-  6.  Your tone should be clear, professional, and supportive. Use motivational language strategically to encourage focus and well-being at key moments.
-  7.  For each task, create a 'notificationText' that is clear, concise, and serves as an effective reminder.
-  8.  Output *only* a valid JSON array of objects that strictly adheres to the provided schema. Do not include markdown formatting or any text outside the JSON array.`;
+  2.  Incorporate all user-provided specifications, such as fixed meeting times or specific tasks.
+  3.  Schedule focused work blocks ('Productivity') for 60-90 minutes each.
+  4.  After each focused work block, schedule a 5-10 minute break.
+  5.  Alternate breaks between 'Physical' activities (e.g., 'Gentle neck stretches', 'Walk around and get water') and 'Mental' wellness activities (e.g., 'Mindful breathing for 3 minutes', 'Listen to a favorite calm song').
+  6.  Include a longer lunch break.
+  7.  The user has requested the notification tone to be: **'${tone}'**.
+  8.  For each task, create a 'notificationText' that is clear, concise, and serves as an effective reminder, strictly adhering to the requested tone.
+      - If tone is 'Neutral & Professional', be direct and clear (e.g., 'Scheduled block for Math assignment begins now.').
+      - If tone is 'Firm & Motivating', be encouraging but direct (e.g., 'Let's go! Time to crush that Math assignment. You've got this.').
+      - If tone is 'Gentle & Encouraging', be soft and supportive (e.g., 'It's time for your math assignment. Remember to be kind to yourself as you work.').
+  9.  Output *only* a valid JSON array of objects that strictly adheres to the provided schema. Do not include markdown formatting or any text outside the JSON array.`;
 };
 
-export const generatePlan = async (userInput: string): Promise<PlanItem[]> => {
-  const prompt = createPrompt(userInput);
+export const generatePlan = async (userInput: string, specifications: string, tone: string): Promise<PlanItem[]> => {
+  const prompt = createPrompt(userInput, specifications, tone);
 
   try {
     const response = await ai.models.generateContent({
@@ -68,7 +77,7 @@ export const generatePlan = async (userInput: string): Promise<PlanItem[]> => {
       config: {
         responseMimeType: 'application/json',
         responseSchema: planSchema,
-        temperature: 0.6, // Slightly lowered for more consistent, neutral tone
+        temperature: 0.6,
       }
     });
     
